@@ -1,0 +1,37 @@
+name: Bluesky
+
+on:
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bluesky
+  cancel-in-progress: false
+
+jobs:
+  veroeffentlichen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            plan.json
+            bluesky
+          sparse-checkout-cone-mode: false
+      - name: Fällige Reels veröffentlichen
+        env:
+          BSKY_HANDLE: bastianaue.com
+          BSKY_APP_PASSWORD: ${{ secrets.BSKY_APP_PASSWORD }}
+        run: python3 bluesky/veroeffentlichen.py
+      - name: Festhalten
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add bluesky/gepostet.json
+          git diff --cached --quiet || (git commit -m "Bluesky: veröffentlicht" && git push)
